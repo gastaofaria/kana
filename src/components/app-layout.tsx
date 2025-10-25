@@ -1,11 +1,11 @@
 'use client'
 
+// import { AppFooter } from '@/components/app-footer'
+import { AppHeader } from '@/components/app-header'
+import { ClusterUiChecker } from '@/features/cluster/ui/cluster-ui-checker'
+import React from 'react'
 import { ThemeProvider } from './theme-provider'
 import { Toaster } from './ui/sonner'
-import { AppHeader } from '@/components/app-header'
-import React from 'react'
-import { AppFooter } from '@/components/app-footer'
-import { ClusterUiChecker } from '@/features/cluster/ui/cluster-ui-checker'
 
 import { AccountUiChecker } from '@/features/account/ui/account-ui-checker'
 
@@ -26,7 +26,7 @@ export function AppLayout({
           </ClusterUiChecker>
           {children}
         </main>
-        <AppFooter />
+        {/* <AppFooter /> */}
       </div>
       <Toaster closeButton />
     </ThemeProvider>

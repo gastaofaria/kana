@@ -1,16 +1,15 @@
 'use client'
+import { ThemeSelect } from '@/components/theme-select'
+import { Button } from '@/components/ui/button'
+import { WalletDropdown } from '@/components/wallet-dropdown'
+import { Menu, X } from 'lucide-react'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
-import dynamic from 'next/dynamic'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Menu, X } from 'lucide-react'
-import { ThemeSelect } from '@/components/theme-select'
-import { WalletDropdown } from '@/components/wallet-dropdown'
 
-const ClusterDropdown = dynamic(() => import('@/components/cluster-dropdown').then((m) => m.ClusterDropdown), {
-  ssr: false,
-})
+// const ClusterDropdown = dynamic(() => import('@/components/cluster-dropdown').then((m) => m.ClusterDropdown), {
+//   ssr: false,
+// })
 
 export function AppHeader({ links = [] }: { links: { label: string; path: string }[] }) {
   const pathname = usePathname()
@@ -21,9 +20,9 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
   }
 
   return (
-    <header className="relative z-50 px-4 py-2 bg-card/50">
-      <div className="mx-auto flex justify-between items-center">
-        <div className="flex items-baseline gap-4">
+    <header className="relative z-50 px-4 py-2">
+      <div className="mx-auto flex flex-row-reverse">
+        {/* <div className="flex items-baseline gap-4">
           <Link className="text-xl hover:text-neutral-500 dark:hover:text-white" href="/">
             <span>Kana</span>
           </Link>
@@ -41,7 +40,7 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
               ))}
             </ul>
           </div>
-        </div>
+        </div> */}
 
         <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setShowMenu(!showMenu)}>
           {showMenu ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -49,7 +48,7 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
 
         <div className="hidden md:flex items-center gap-4">
           <WalletDropdown />
-          <ClusterDropdown />
+          {/* <ClusterDropdown /> */}
           <ThemeSelect />
         </div>
 
@@ -58,7 +57,7 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
             <div className="flex flex-col p-4 gap-4 border-t dark:border-neutral-800">
               <div className="flex justify-end items-center gap-4">
                 <WalletDropdown />
-                <ClusterDropdown />
+                {/* <ClusterDropdown /> */}
                 <ThemeSelect />
               </div>
               <ul className="flex flex-col gap-4">
