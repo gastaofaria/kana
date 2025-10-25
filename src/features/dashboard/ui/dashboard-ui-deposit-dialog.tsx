@@ -1,18 +1,20 @@
 'use client'
 
+import { useSolana } from '@/components/solana/use-solana'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import Image from 'next/image'
 import { useState } from 'react'
+import { useGetUsdcBalanceQuery } from '../data-access/use-get-usdc-balance-query'
 
-interface DashboardUiDepositDialogProps {
-  usdcBalance: number
-}
-
-export function DashboardUiDepositDialog({ usdcBalance }: DashboardUiDepositDialogProps) {
+export function DashboardUiDepositDialog() {
   const [depositAmount, setDepositAmount] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const { account } = useSolana()
+
+  const usdcBalanceQuery = useGetUsdcBalanceQuery({ address: account?.address! })
+  const usdcBalance = usdcBalanceQuery.data?.value ? Number(usdcBalanceQuery.data.value) / 1_000_000 : 0
 
   const handleDeposit = () => {
     // TODO: Implement deposit logic

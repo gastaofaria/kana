@@ -10,7 +10,6 @@ interface DashboardUiYieldCardProps {
   tokenSymbol: string
   tokenIcon: string
   yieldDisplay: ReactNode
-  usdcBalance: number
   disabled?: boolean
 }
 
@@ -18,10 +17,8 @@ export function DashboardUiYieldCard({
   tokenSymbol,
   tokenIcon,
   yieldDisplay,
-  usdcBalance,
   disabled = false,
 }: DashboardUiYieldCardProps) {
-  console.log('yieldDisplay', yieldDisplay)
   return (
     <Card className={disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}>
       <CardHeader>
@@ -34,10 +31,14 @@ export function DashboardUiYieldCard({
           {tokenSymbol}
         </CardTitle>
         <CardAction>
-          <DashboardUiDepositDialog usdcBalance={usdcBalance} />
+          <DashboardUiDepositDialog />
         </CardAction>
       </CardHeader>
       <CardContent>
+        <div className="mb-4">
+          <p className="text-2xl font-bold">$0</p>
+          <p className="text-sm text-muted-foreground">0 {tokenSymbol}</p>
+        </div>
         <div className="flex justify-between gap-4">
           {yieldDisplay}
           <div className="ml-auto">

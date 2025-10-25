@@ -33,7 +33,7 @@ export function DashboardUiSolYieldDisplay() {
           <div>APY</div>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="text-3xl font-bold text-green-600 cursor-help w-fit">{data.bestTotalAPY.toFixed(2)}%</div>
+              <div className="text-3xl font-bold text-primary cursor-help w-fit">{data.bestTotalAPY.toFixed(2)}%</div>
             </TooltipTrigger>
             <TooltipContent>
               <div className="space-y-1">

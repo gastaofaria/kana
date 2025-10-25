@@ -33,7 +33,7 @@ export function DashboardUiUsdcYieldDisplay() {
           <div>APY</div>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="text-3xl font-bold text-green-600 cursor-help w-fit">{data.bestTotalAPY.toFixed(2)}%</div>
+              <div className="text-3xl font-bold text-primary cursor-help w-fit">{data.bestTotalAPY.toFixed(2)}%</div>
             </TooltipTrigger>
             <TooltipContent>
               <div className="space-y-1">
@@ -74,7 +74,7 @@ export function DashboardUiUsdcYieldDisplay() {
 {
   /* <div className="space-y-1">
           <div className="text-xs text-muted-foreground">Advantage</div>
-          <div className="font-semibold text-green-600">+{data.difference.toFixed(2)}%</div>
+          <div className="font-semibold text-primary">+{data.difference.toFixed(2)}%</div>
         </div> */
 }
 
