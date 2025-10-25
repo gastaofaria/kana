@@ -2,13 +2,11 @@
 
 import { AppHero } from '@/components/app-hero'
 import { useSolana } from '@/components/solana/use-solana'
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { WalletDropdown } from '@/components/wallet-dropdown'
-import Image from 'next/image'
-import { DashboardUiBalance } from './ui/dashboard-ui-balance'
-import { DashboardUiDepositDialog } from './ui/dashboard-ui-deposit-dialog'
-import { DashboardUiYieldDisplay } from './ui/dashboard-ui-yield-display'
 import { useGetUsdcBalanceQuery } from './data-access/use-get-usdc-balance-query'
+import { DashboardUiBalance } from './ui/dashboard-ui-balance'
+import { DashboardUiYieldCards } from './ui/dashboard-ui-yield-cards'
 
 export default function DashboardFeature() {
   const { account, connected } = useSolana()
@@ -37,21 +35,8 @@ export default function DashboardFeature() {
               </CardHeader>
             </Card>
           </div>
-          <div className="mt-8 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Card>
-              <CardHeader>
-                <CardTitle className="group-hover:text-primary transition-colors flex items-center gap-2">
-                  <Image src="/tokens/usdc.png" alt="USDC" width={24} height={24} />
-                  USDC
-                </CardTitle>
-                <CardAction>
-                  <DashboardUiDepositDialog usdcBalance={usdcBalance} />
-                </CardAction>
-              </CardHeader>
-              <CardContent>
-                <DashboardUiYieldDisplay />
-              </CardContent>
-            </Card>
+          <div className="mt-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <DashboardUiYieldCards usdcBalance={usdcBalance} />
           </div>
         </>
       )}

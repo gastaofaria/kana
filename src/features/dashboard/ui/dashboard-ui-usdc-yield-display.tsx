@@ -1,10 +1,10 @@
 'use client'
 
-import Image from 'next/image'
-import { useYieldComparisonQuery } from '../data-access/use-yield-comparison-query'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { useUsdcYieldComparisonQuery } from '../data-access/use-usdc-yield-comparison-query'
 
-export function DashboardUiYieldDisplay() {
-  const { data, isLoading, isError } = useYieldComparisonQuery()
+export function DashboardUiUsdcYieldDisplay() {
+  const { data, isLoading, isError } = useUsdcYieldComparisonQuery()
 
   if (isLoading) {
     return (
@@ -30,14 +30,33 @@ export function DashboardUiYieldDisplay() {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
-          <div className="text-xs text-muted-foreground mt-1">
-            Natural: {data[data.bestProtocol.toLowerCase() as 'jupiter' | 'kamino'].naturalAPY.toFixed(2)}% +
-            Incentives: {data[data.bestProtocol.toLowerCase() as 'jupiter' | 'kamino'].incentivesAPY.toFixed(2)}% APY
-          </div>
-          <div className="text-3xl font-bold text-green-600">APY: {data.bestTotalAPY.toFixed(2)}%</div>
+          <div>APY</div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="text-3xl font-bold text-green-600 cursor-help w-fit">{data.bestTotalAPY.toFixed(2)}%</div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="space-y-1">
+                <div className="text-xs">
+                  USDC APY: {data[data.bestProtocol.toLowerCase() as 'jupiter' | 'kamino'].naturalAPY.toFixed(2)}%
+                </div>
+                <div className="text-xs">
+                  {data.bestProtocol === 'Jupiter' ? 'USDC' : 'KMNO'} Rewards:{' '}
+                  {data[data.bestProtocol.toLowerCase() as 'jupiter' | 'kamino'].incentivesAPY.toFixed(2)}%
+                </div>
+                <hr className="border-t border-background/20 my-1" />
+                <div className="text-xs font-semibold">Total: {data.bestTotalAPY.toFixed(2)}%</div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
         </div>
+      </div>
+    </div>
+  )
+}
 
-        <div className="space-y-1">
+{
+  /* <div className="space-y-1">
           <div className="text-xs text-muted-foreground">Best Protocol</div>
           <div className="flex items-center gap-2 font-semibold">
             <Image
@@ -49,15 +68,18 @@ export function DashboardUiYieldDisplay() {
             />
             {data.bestProtocol}
           </div>
-        </div>
+        </div> */
+}
 
-        <div className="space-y-1">
+{
+  /* <div className="space-y-1">
           <div className="text-xs text-muted-foreground">Advantage</div>
           <div className="font-semibold text-green-600">+{data.difference.toFixed(2)}%</div>
-        </div>
-      </div>
+        </div> */
+}
 
-      <div className="pt-4 border-t space-y-2">
+{
+  /* <div className="pt-4 border-t space-y-2">
         <div className="text-xs font-semibold text-muted-foreground">Comparison</div>
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="flex items-center gap-2">
@@ -71,7 +93,5 @@ export function DashboardUiYieldDisplay() {
             <span className="font-mono">{data.kamino.totalAPY.toFixed(2)}%</span>
           </div>
         </div>
-      </div>
-    </div>
-  )
+      </div> */
 }

@@ -22,31 +22,29 @@ async function fetchJupiterRate() {
   }
 
   const data = await response.json()
-  const usdcToken = data.find((token: any) => token.symbol === 'USDC' || token.name.includes('USDC'))
+  const wsolToken = data.find((token: any) => token.symbol === 'WSOL' || token.name.includes('WSOL'))
 
-  if (!usdcToken) {
-    throw new Error('USDC token not found in Jupiter API')
+  if (!wsolToken) {
+    throw new Error('WSOL token not found in Jupiter API')
   }
 
   return {
     protocol: 'Jupiter' as const,
-    naturalAPY: usdcToken.supplyRate / 100,
-    incentivesAPY: usdcToken.rewardsRate / 100,
-    totalAPY: usdcToken.totalRate / 100,
+    naturalAPY: wsolToken.supplyRate / 100,
+    incentivesAPY: wsolToken.rewardsRate / 100,
+    totalAPY: wsolToken.totalRate / 100,
   }
 }
 
 async function fetchKaminoRate() {
-  const response = await fetch(
-    'https://api.kamino.finance/kvaults/HDsayqAsDWy3QvANGqh2yNraqcD8Fnjgh73Mhb3WRS5E/metrics'
-  )
+  const response = await fetch('https://api.kamino.finance/kvaults/QAYtEKciq4gc42K683rTaWu3JxqceA7JkEkZxwWUWBo/metrics')
   if (!response.ok) {
     throw new Error('Failed to fetch Kamino rates')
   }
 
   const data = await response.json()
   const naturalAPY = Number((data.apy * 100).toFixed(2))
-  const incentivesAPY = Number((data.apyIncentives * 100).toFixed(2))
+  const incentivesAPY = Number((data.apyReservesIncentives * 100).toFixed(2))
 
   return {
     protocol: 'Kamino' as const,
@@ -56,14 +54,11 @@ async function fetchKaminoRate() {
   }
 }
 
-export function useYieldComparisonQuery() {
+export function useSolYieldComparisonQuery() {
   return useQuery({
-    queryKey: ['yield-comparison'],
+    queryKey: ['sol-yield-comparison'],
     queryFn: async (): Promise<YieldComparison> => {
-      const [jupiter, kamino] = await Promise.all([
-        fetchJupiterRate(),
-        fetchKaminoRate(),
-      ])
+      const [jupiter, kamino] = await Promise.all([fetchJupiterRate(), fetchKaminoRate()])
 
       const bestProtocol = jupiter.totalAPY > kamino.totalAPY ? 'Jupiter' : 'Kamino'
       const bestTotalAPY = Math.max(jupiter.totalAPY, kamino.totalAPY)
