@@ -12,6 +12,7 @@ import { useGetUsdcBalanceQuery } from '../data-access/use-get-usdc-balance-quer
 import { useTransferUsdcMutation } from '../data-access/use-transfer-usdc-mutation'
 import { useRecordDepositMutation } from '../data-access/use-record-deposit-mutation'
 import { useGetUserDepositsQuery } from '../data-access/use-get-user-deposits-query'
+import { useWithdrawMutation } from '../data-access/use-withdraw-mutation'
 
 const DESTINATION_ADDRESS = address('E9y3X4EqLZuMj4zHvmULrihhPzZKiCzu2v98KkzrrQzb')
 
@@ -29,6 +30,7 @@ export function DashboardUiDepositDialog() {
 
   const transferUsdcMutation = useTransferUsdcMutation({ account: account!, address: account?.address! })
   const recordDepositMutation = useRecordDepositMutation()
+  const withdrawMutation = useWithdrawMutation()
 
   const handleDeposit = async () => {
     if (!account?.address || !isValidAmount()) {
@@ -63,6 +65,35 @@ export function DashboardUiDepositDialog() {
     } catch (error) {
       console.error('Deposit failed:', error)
       // Error toasts are already handled by the mutations
+    }
+  }
+
+  const handleWithdraw = async () => {
+    if (!account?.address || !isValidAmount()) {
+      return
+    }
+
+    const amount = parseFloat(depositAmount)
+
+    try {
+      await withdrawMutation.mutateAsync({
+        walletAddress: account.address,
+        amount,
+      })
+
+      setIsDialogOpen(false)
+      setDepositAmount('')
+    } catch (error) {
+      console.error('Withdrawal failed:', error)
+      // Error toasts are already handled by the mutation
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (activeTab === 'deposit') {
+      await handleDeposit()
+    } else {
+      await handleWithdraw()
     }
   }
 
@@ -160,11 +191,16 @@ export function DashboardUiDepositDialog() {
         </div>
         <DialogFooter>
           <Button
-            onClick={handleDeposit}
-            disabled={!isValidAmount() || transferUsdcMutation.isPending || recordDepositMutation.isPending}
+            onClick={handleSubmit}
+            disabled={
+              !isValidAmount() ||
+              transferUsdcMutation.isPending ||
+              recordDepositMutation.isPending ||
+              withdrawMutation.isPending
+            }
             className="w-full"
           >
-            {transferUsdcMutation.isPending || recordDepositMutation.isPending
+            {transferUsdcMutation.isPending || recordDepositMutation.isPending || withdrawMutation.isPending
               ? 'Processing...'
               : activeTab === 'deposit'
                 ? 'Deposit'
