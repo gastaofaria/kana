@@ -6,7 +6,7 @@ export function DashboardUiEarningsDisplay() {
   // if (isLoading) {
   //   return (
   //     <div className="grid grid-cols-2 gap-4">
-  //       <div className="col-span-2 text-2xl font-bold">Loading...</div>
+  //       <Spinner />
   //       <div className="text-sm text-muted-foreground">APY</div>
   //       <div className="text-sm text-muted-foreground">Protocol</div>
   //     </div>

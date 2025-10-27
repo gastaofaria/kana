@@ -3,11 +3,16 @@
 import { AppHero } from '@/components/app-hero'
 import { useSolana } from '@/components/solana/use-solana'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Spinner } from '@/components/ui/spinner'
 import { WalletDropdown } from '@/components/wallet-dropdown'
+import { useGetUserDepositsQuery } from './data-access/use-get-user-deposits-query'
 import { DashboardUiYieldCards } from './ui/dashboard-ui-yield-cards'
 
 export default function DashboardFeature() {
-  const { connected } = useSolana()
+  const { connected, account } = useSolana()
+  const userDepositsQuery = useGetUserDepositsQuery({ walletAddress: account?.address })
+  const depositedBalance = userDepositsQuery.data?.total_deposits || 0
+  const isLoading = userDepositsQuery.isLoading
 
   return (
     <>
@@ -23,17 +28,25 @@ export default function DashboardFeature() {
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <Card>
               <CardHeader>
-                <CardTitle className="group-hover:text-primary transition-colors text-2xl font-bold cursor-pointer">
-                  $0
-                </CardTitle>
-                <CardDescription>
-                  You&apos;ve earned <span className="text-primary font-semibold">$0</span> so far
-                </CardDescription>
+                {isLoading ? (
+                  <CardTitle className="group-hover:text-primary transition-colors text-2xl font-bold cursor-pointer">
+                    <Spinner className="size-6" />
+                  </CardTitle>
+                ) : (
+                  <>
+                    <CardTitle className="group-hover:text-primary transition-colors text-2xl font-bold cursor-pointer">
+                      {isLoading ? <Spinner className="size-6" /> : `$${depositedBalance.toFixed(2)}`}
+                    </CardTitle>
+                    <CardDescription>
+                      You&apos;ve earned <span className="text-primary font-semibold">$0</span> so far
+                    </CardDescription>
+                  </>
+                )}
               </CardHeader>
             </Card>
           </div>
           <div className="mt-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <DashboardUiYieldCards />
+            <DashboardUiYieldCards depositedBalance={depositedBalance} isLoading={isLoading} />
           </div>
         </>
       )}

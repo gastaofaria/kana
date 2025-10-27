@@ -1,5 +1,6 @@
 'use client'
 
+import { Spinner } from '@/components/ui/spinner'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { IconInfoCircle } from '@tabler/icons-react'
 import { useSolYieldComparisonQuery } from '../data-access/use-sol-yield-comparison-query'
@@ -7,22 +8,19 @@ import { useSolYieldComparisonQuery } from '../data-access/use-sol-yield-compari
 export function DashboardUiSolYieldDisplay() {
   const { data, isLoading, isError } = useSolYieldComparisonQuery()
 
-  if (isLoading) {
+  if (isLoading || isError || !data) {
     return (
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2 text-2xl font-bold">Loading...</div>
-        <div className="text-sm text-muted-foreground">APY</div>
-        <div className="text-sm text-muted-foreground">Protocol</div>
-      </div>
-    )
-  }
-
-  if (isError || !data) {
-    return (
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2 text-2xl font-bold text-destructive">Error loading rates</div>
-        <div className="text-sm text-muted-foreground">APY</div>
-        <div className="text-sm text-muted-foreground">Protocol</div>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2">
+            <div className="flex items-center gap-1">
+              <span>APY</span>
+            </div>
+            <div className="h-[44px] flex items-center text-primary">
+              <Spinner className="size-6" />
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

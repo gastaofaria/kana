@@ -1,6 +1,7 @@
 'use client'
 
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Spinner } from '@/components/ui/spinner'
 import Image from 'next/image'
 import { ReactNode } from 'react'
 import { DashboardUiDepositDialog } from './dashboard-ui-deposit-dialog'
@@ -11,6 +12,8 @@ interface DashboardUiYieldCardProps {
   tokenIcon: string
   yieldDisplay: ReactNode
   disabled?: boolean
+  depositedBalance?: number
+  isLoading?: boolean
 }
 
 export function DashboardUiYieldCard({
@@ -18,6 +21,8 @@ export function DashboardUiYieldCard({
   tokenIcon,
   yieldDisplay,
   disabled = false,
+  depositedBalance = 0,
+  isLoading = false,
 }: DashboardUiYieldCardProps) {
   return (
     <Card className={disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}>
@@ -36,8 +41,20 @@ export function DashboardUiYieldCard({
       </CardHeader>
       <CardContent>
         <div className="mb-4">
-          <p className="text-2xl font-bold">$0</p>
-          <p className="text-sm text-muted-foreground">0 {tokenSymbol}</p>
+          {isLoading ? (
+            <>
+              <div className="h-8 flex items-center">
+                <Spinner className="size-6" />
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-2xl font-bold">${depositedBalance.toFixed(2)}</p>
+              <p className="text-sm text-muted-foreground">
+                {depositedBalance.toFixed(2)} {tokenSymbol}
+              </p>
+            </>
+          )}
         </div>
         <div className="flex justify-between gap-4">
           {yieldDisplay}
