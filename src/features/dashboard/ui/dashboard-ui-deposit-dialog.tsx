@@ -7,8 +7,11 @@ import { Input } from '@/components/ui/input'
 import { address } from 'gill'
 import Image from 'next/image'
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useGetUsdcBalanceQuery } from '../data-access/use-get-usdc-balance-query'
 import { useTransferUsdcMutation } from '../data-access/use-transfer-usdc-mutation'
+import { useRecordDepositMutation } from '../data-access/use-record-deposit-mutation'
+import { useGetUserDepositsQuery } from '../data-access/use-get-user-deposits-query'
 
 const DESTINATION_ADDRESS = address('E9y3X4EqLZuMj4zHvmULrihhPzZKiCzu2v98KkzrrQzb')
 
@@ -21,7 +24,11 @@ export function DashboardUiDepositDialog() {
   const usdcBalanceQuery = useGetUsdcBalanceQuery({ address: account?.address! })
   const usdcBalance = usdcBalanceQuery.data?.value ? Number(usdcBalanceQuery.data.value) / 1_000_000 : 0
 
+  const userDepositsQuery = useGetUserDepositsQuery({ walletAddress: account?.address })
+  const depositedBalance = userDepositsQuery.data?.total_deposits || 0
+
   const transferUsdcMutation = useTransferUsdcMutation({ account: account!, address: account?.address! })
+  const recordDepositMutation = useRecordDepositMutation()
 
   const handleDeposit = async () => {
     if (!account?.address || !isValidAmount()) {
@@ -30,18 +37,39 @@ export function DashboardUiDepositDialog() {
 
     const amount = parseFloat(depositAmount)
 
-    await transferUsdcMutation.mutateAsync({
-      destination: DESTINATION_ADDRESS,
-      amount,
-    })
+    try {
+      // First, verify the backend is accessible by doing a pre-check
+      const preCheckResponse = await fetch(`/api/deposits?walletAddress=${encodeURIComponent(account.address)}`)
+      if (!preCheckResponse.ok) {
+        toast.error('Backend service is unavailable. Please try again later.')
+        return
+      }
 
-    setIsDialogOpen(false)
-    setDepositAmount('')
+      // Now proceed with the blockchain transfer
+      const signature = await transferUsdcMutation.mutateAsync({
+        destination: DESTINATION_ADDRESS,
+        amount,
+      })
+
+      // Record the deposit in the database
+      await recordDepositMutation.mutateAsync({
+        walletAddress: account.address,
+        amount,
+        transactionSignature: signature,
+      })
+
+      setIsDialogOpen(false)
+      setDepositAmount('')
+    } catch (error) {
+      console.error('Deposit failed:', error)
+      // Error toasts are already handled by the mutations
+    }
   }
 
   const isValidAmount = () => {
     const amount = parseFloat(depositAmount)
-    return !isNaN(amount) && amount > 0 && amount <= usdcBalance
+    const maxAmount = activeTab === 'deposit' ? usdcBalance : depositedBalance
+    return !isNaN(amount) && amount > 0 && amount <= maxAmount
   }
 
   return (
@@ -106,7 +134,7 @@ export function DashboardUiDepositDialog() {
             placeholder="0.00"
             value={depositAmount}
             onChange={(e) => setDepositAmount(e.target.value)}
-            max={usdcBalance}
+            max={activeTab === 'deposit' ? usdcBalance : depositedBalance}
             min="0"
             className="[&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
@@ -114,12 +142,16 @@ export function DashboardUiDepositDialog() {
         <div className="mb-4 rounded-md border p-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Image src="/tokens/usdc.png" alt="USDC" width={20} height={20} />
-            <span className="text-sm">Available</span>
+            <span className="text-sm">{activeTab === 'deposit' ? 'Available' : 'Deposited'}</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="text-sm font-medium">{usdcBalance.toFixed(2)} USDC</div>
+            <div className="text-sm font-medium">
+              {activeTab === 'deposit' ? usdcBalance.toFixed(2) : depositedBalance.toFixed(2)} USDC
+            </div>
             <span
-              onClick={() => setDepositAmount(usdcBalance.toFixed(2))}
+              onClick={() =>
+                setDepositAmount(activeTab === 'deposit' ? usdcBalance.toFixed(2) : depositedBalance.toFixed(2))
+              }
               className="text-xs text-primary hover:text-green-700 font-medium cursor-pointer"
             >
               Max
@@ -129,10 +161,14 @@ export function DashboardUiDepositDialog() {
         <DialogFooter>
           <Button
             onClick={handleDeposit}
-            disabled={!isValidAmount() || transferUsdcMutation.isPending}
+            disabled={!isValidAmount() || transferUsdcMutation.isPending || recordDepositMutation.isPending}
             className="w-full"
           >
-            {transferUsdcMutation.isPending ? 'Processing...' : activeTab === 'deposit' ? 'Deposit' : 'Withdraw'}
+            {transferUsdcMutation.isPending || recordDepositMutation.isPending
+              ? 'Processing...'
+              : activeTab === 'deposit'
+                ? 'Deposit'
+                : 'Withdraw'}
           </Button>
         </DialogFooter>
       </DialogContent>
