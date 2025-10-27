@@ -4,9 +4,13 @@ import { useSolana } from '@/components/solana/use-solana'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { address } from 'gill'
 import Image from 'next/image'
 import { useState } from 'react'
 import { useGetUsdcBalanceQuery } from '../data-access/use-get-usdc-balance-query'
+import { useTransferUsdcMutation } from '../data-access/use-transfer-usdc-mutation'
+
+const DESTINATION_ADDRESS = address('E9y3X4EqLZuMj4zHvmULrihhPzZKiCzu2v98KkzrrQzb')
 
 export function DashboardUiDepositDialog() {
   const [depositAmount, setDepositAmount] = useState('')
@@ -16,9 +20,20 @@ export function DashboardUiDepositDialog() {
   const usdcBalanceQuery = useGetUsdcBalanceQuery({ address: account?.address! })
   const usdcBalance = usdcBalanceQuery.data?.value ? Number(usdcBalanceQuery.data.value) / 1_000_000 : 0
 
-  const handleDeposit = () => {
-    // TODO: Implement deposit logic
-    console.log('Depositing:', depositAmount)
+  const transferUsdcMutation = useTransferUsdcMutation({ account: account!, address: account?.address! })
+
+  const handleDeposit = async () => {
+    if (!account?.address || !isValidAmount()) {
+      return
+    }
+
+    const amount = parseFloat(depositAmount)
+
+    await transferUsdcMutation.mutateAsync({
+      destination: DESTINATION_ADDRESS,
+      amount,
+    })
+
     setIsDialogOpen(false)
     setDepositAmount('')
   }
@@ -31,7 +46,7 @@ export function DashboardUiDepositDialog() {
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
-        <Button>Deposit</Button>
+        <Button>Manage</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -53,11 +68,23 @@ export function DashboardUiDepositDialog() {
             <Image src="/tokens/usdc.png" alt="USDC" width={20} height={20} />
             <span className="text-sm">Available</span>
           </div>
-          <div className="text-sm font-medium">{usdcBalance.toFixed(2)} USDC</div>
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-medium">{usdcBalance.toFixed(2)} USDC</div>
+            <span
+              onClick={() => setDepositAmount(usdcBalance.toFixed(2))}
+              className="text-xs text-primary hover:text-green-700 font-medium cursor-pointer"
+            >
+              Max
+            </span>
+          </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleDeposit} disabled={!isValidAmount()} className="w-full">
-            Deposit
+          <Button
+            onClick={handleDeposit}
+            disabled={!isValidAmount() || transferUsdcMutation.isPending}
+            className="w-full"
+          >
+            {transferUsdcMutation.isPending ? 'Processing...' : 'Deposit'}
           </Button>
         </DialogFooter>
       </DialogContent>
