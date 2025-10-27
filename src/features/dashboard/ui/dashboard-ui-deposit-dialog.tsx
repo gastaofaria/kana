@@ -15,6 +15,7 @@ const DESTINATION_ADDRESS = address('E9y3X4EqLZuMj4zHvmULrihhPzZKiCzu2v98KkzrrQz
 export function DashboardUiDepositDialog() {
   const [depositAmount, setDepositAmount] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit')
   const { account } = useSolana()
 
   const usdcBalanceQuery = useGetUsdcBalanceQuery({ address: account?.address! })
@@ -50,8 +51,55 @@ export function DashboardUiDepositDialog() {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Deposit</DialogTitle>
+          <DialogTitle className="flex gap-4 relative">
+            <button
+              onClick={() => setActiveTab('deposit')}
+              className={`pb-2 font-medium transition-colors relative ${
+                activeTab === 'deposit' ? 'text-foreground' : 'text-muted-foreground'
+              }`}
+            >
+              Deposit
+              {activeTab === 'deposit' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary transition-all" />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('withdraw')}
+              className={`pb-2 font-medium transition-colors relative ${
+                activeTab === 'withdraw' ? 'text-foreground' : 'text-muted-foreground'
+              }`}
+            >
+              Withdraw
+              {activeTab === 'withdraw' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary transition-all" />
+              )}
+            </button>
+          </DialogTitle>
         </DialogHeader>
+        {/* <div className="flex gap-8 border-b relative mb-4">
+          <button
+            onClick={() => setActiveTab('deposit')}
+            className={`pb-2 text-sm font-medium transition-colors relative ${
+              activeTab === 'deposit' ? 'text-foreground' : 'text-muted-foreground'
+            }`}
+          >
+            Deposit
+            {activeTab === 'deposit' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary transition-all" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('withdraw')}
+            className={`pb-2 text-sm font-medium transition-colors relative ${
+              activeTab === 'withdraw' ? 'text-foreground' : 'text-muted-foreground'
+            }`}
+          >
+            Withdraw
+            {activeTab === 'withdraw' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary transition-all" />
+            )}
+          </button>
+        </div> */}
         <div className="py-4">
           <Input
             type="number"
@@ -84,7 +132,7 @@ export function DashboardUiDepositDialog() {
             disabled={!isValidAmount() || transferUsdcMutation.isPending}
             className="w-full"
           >
-            {transferUsdcMutation.isPending ? 'Processing...' : 'Deposit'}
+            {transferUsdcMutation.isPending ? 'Processing...' : activeTab === 'deposit' ? 'Deposit' : 'Withdraw'}
           </Button>
         </DialogFooter>
       </DialogContent>
