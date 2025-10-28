@@ -15,14 +15,28 @@ interface YieldComparison {
   difference: number
 }
 
+interface JupiterToken {
+  address: string
+  chainId: string
+  name: string
+  symbol: string
+  decimals: number
+  logoUrl: string
+  price: string
+  coingeckoId: string
+  supplyRate: number
+  rewardsRate: number
+  totalRate: number
+}
+
 async function fetchJupiterRate() {
   const response = await fetch('https://lite-api.jup.ag/lend/v1/earn/tokens')
   if (!response.ok) {
     throw new Error('Failed to fetch Jupiter rates')
   }
 
-  const data = await response.json()
-  const wsolToken = data.find((token: any) => token.symbol === 'WSOL' || token.name.includes('WSOL'))
+  const data = (await response.json()) as JupiterToken[]
+  const wsolToken = data.find((token) => token.symbol === 'WSOL' || token.name.includes('WSOL'))
 
   if (!wsolToken) {
     throw new Error('WSOL token not found in Jupiter API')

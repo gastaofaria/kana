@@ -21,14 +21,19 @@ export function DashboardUiDepositDialog() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit')
   const { account } = useSolana()
+  const dummyAddress = address('11111111111111111111111111111111')
+  const accountAddress = account?.address ? address(account.address) : dummyAddress
 
-  const usdcBalanceQuery = useGetUsdcBalanceQuery({ address: account?.address! })
+  const usdcBalanceQuery = useGetUsdcBalanceQuery({ address: accountAddress })
   const usdcBalance = usdcBalanceQuery.data?.value ? Number(usdcBalanceQuery.data.value) / 1_000_000 : 0
 
   const userDepositsQuery = useGetUserDepositsQuery({ walletAddress: account?.address })
   const depositedBalance = userDepositsQuery.data?.total_deposits || 0
 
-  const transferUsdcMutation = useTransferUsdcMutation({ account: account!, address: account?.address! })
+  const transferUsdcMutation = useTransferUsdcMutation({
+    account: account as NonNullable<typeof account>,
+    address: accountAddress
+  })
   const recordDepositMutation = useRecordDepositMutation()
   const withdrawMutation = useWithdrawMutation()
 

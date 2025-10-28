@@ -1,6 +1,6 @@
 import db from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
-import { address, Address, createTransaction } from 'gill'
+import { address, createTransaction } from 'gill'
 
 const USDC_MINT = address('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v')
 const TOKEN_PROGRAM_ID = address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
@@ -43,10 +43,13 @@ export async function POST(request: NextRequest) {
     const maxWithdrawable = (user.shares * poolState.total_assets) / poolState.total_shares
 
     if (amount > maxWithdrawable) {
-      return NextResponse.json({
-        error: 'Insufficient balance',
-        maxWithdrawable,
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: 'Insufficient balance',
+          maxWithdrawable,
+        },
+        { status: 400 },
+      )
     }
 
     // Get private key from environment
@@ -72,7 +75,11 @@ export async function POST(request: NextRequest) {
 
     // Get the source token account (destination address's USDC account)
     const sourceTokenAccounts = await client
-      .getTokenAccountsByOwner(DESTINATION_ADDRESS, { mint: USDC_MINT }, { commitment: 'confirmed', encoding: 'jsonParsed' })
+      .getTokenAccountsByOwner(
+        DESTINATION_ADDRESS,
+        { mint: USDC_MINT },
+        { commitment: 'confirmed', encoding: 'jsonParsed' },
+      )
       .send()
 
     if (!sourceTokenAccounts.value.length) {
@@ -138,11 +145,13 @@ export async function POST(request: NextRequest) {
     const { getBase64EncodedWireTransaction } = await import('gill')
     const encodedTransaction = getBase64EncodedWireTransaction(signedTransaction)
 
-    const sendResult = await client.sendTransaction(encodedTransaction, {
-      encoding: 'base64',
-      skipPreflight: false,
-      maxRetries: 3,
-    }).send()
+    const sendResult = await client
+      .sendTransaction(encodedTransaction, {
+        encoding: 'base64',
+        skipPreflight: false,
+        maxRetries: 3n,
+      })
+      .send()
 
     const signature = sendResult
 
