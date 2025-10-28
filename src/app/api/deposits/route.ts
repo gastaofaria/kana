@@ -18,17 +18,47 @@ export async function POST(request: NextRequest) {
       VALUES (?, ?, ?)
     `)
 
+    const getPoolState = db.prepare('SELECT * FROM pool_state WHERE id = 1')
+    const updatePoolState = db.prepare(`
+      UPDATE pool_state
+      SET total_shares = ?, total_assets = ?
+      WHERE id = 1
+    `)
+
     const upsertUser = db.prepare(`
-      INSERT INTO users (wallet_address, total_deposits)
-      VALUES (?, ?)
+      INSERT INTO users (wallet_address, total_deposits, shares)
+      VALUES (?, ?, ?)
       ON CONFLICT(wallet_address)
       DO UPDATE SET
         total_deposits = total_deposits + excluded.total_deposits,
+        shares = shares + excluded.shares,
         updated_at = strftime('%s', 'now')
     `)
 
     const transaction = db.transaction((walletAddress: string, amount: number, transactionSignature: string) => {
-      upsertUser.run(walletAddress, amount)
+      // Get current pool state
+      const poolState = getPoolState.get() as { total_shares: number; total_assets: number }
+
+      // Calculate shares to mint
+      // Scale by 1e6 to handle decimal amounts (same as USDC decimals)
+      let sharesToMint: number
+      if (poolState.total_shares === 0) {
+        // First depositor gets shares equal to deposit amount (scaled)
+        sharesToMint = Math.floor(amount * 1e6)
+      } else {
+        // shares = amount * totalShares / totalAssets
+        sharesToMint = Math.floor((amount * poolState.total_shares) / poolState.total_assets)
+      }
+
+      // Update pool state
+      const newTotalShares = poolState.total_shares + sharesToMint
+      const newTotalAssets = poolState.total_assets + amount
+      updatePoolState.run(newTotalShares, newTotalAssets)
+
+      // Update user
+      upsertUser.run(walletAddress, amount, sharesToMint)
+
+      // Insert deposit record
       insertDeposit.run(walletAddress, amount, transactionSignature)
     })
 
@@ -59,6 +89,7 @@ export async function GET(request: NextRequest) {
       | {
           wallet_address: string
           total_deposits: number
+          shares: number
           created_at: number
           updated_at: number
         }
@@ -73,6 +104,7 @@ export async function GET(request: NextRequest) {
         data: {
           wallet_address: walletAddress,
           total_deposits: 0,
+          shares: 0,
           deposits: [],
         },
       })

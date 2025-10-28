@@ -19,16 +19,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Amount must be greater than 0' }, { status: 400 })
     }
 
-    // Check if user has enough deposited balance
+    // Check if user has enough shares and calculate withdrawable amount
     const user = db.prepare('SELECT * FROM users WHERE wallet_address = ?').get(walletAddress) as
       | {
           wallet_address: string
           total_deposits: number
+          shares: number
         }
       | undefined
 
-    if (!user || user.total_deposits < amount) {
-      return NextResponse.json({ error: 'Insufficient deposited balance' }, { status: 400 })
+    if (!user || user.shares === 0) {
+      return NextResponse.json({ error: 'No shares to withdraw' }, { status: 400 })
+    }
+
+    // Get pool state to calculate withdrawable amount
+    const poolState = db.prepare('SELECT * FROM pool_state WHERE id = 1').get() as {
+      total_shares: number
+      total_assets: number
+    }
+
+    // Calculate maximum withdrawable amount based on shares
+    // withdrawableAmount = userShares * totalAssets / totalShares
+    const maxWithdrawable = (user.shares * poolState.total_assets) / poolState.total_shares
+
+    if (amount > maxWithdrawable) {
+      return NextResponse.json({
+        error: 'Insufficient balance',
+        maxWithdrawable,
+      }, { status: 400 })
     }
 
     // Get private key from environment
@@ -128,10 +146,18 @@ export async function POST(request: NextRequest) {
 
     const signature = sendResult
 
-    // Update database - deduct from user's deposits and record withdrawal
+    // Update database - burn shares, update pool state, and record withdrawal
+    const getPoolState = db.prepare('SELECT * FROM pool_state WHERE id = 1')
+    const updatePoolState = db.prepare(`
+      UPDATE pool_state
+      SET total_shares = ?, total_assets = ?
+      WHERE id = 1
+    `)
+
     const updateUser = db.prepare(`
       UPDATE users
       SET total_deposits = total_deposits - ?,
+          shares = shares - ?,
           updated_at = strftime('%s', 'now')
       WHERE wallet_address = ?
     `)
@@ -142,7 +168,22 @@ export async function POST(request: NextRequest) {
     `)
 
     const dbTransaction = db.transaction((walletAddress: string, amount: number, signature: string) => {
-      updateUser.run(amount, walletAddress)
+      // Get current pool state
+      const currentPoolState = getPoolState.get() as { total_shares: number; total_assets: number }
+
+      // Calculate shares to burn
+      // sharesToBurn = amount * totalShares / totalAssets
+      const sharesToBurn = Math.floor((amount * currentPoolState.total_shares) / currentPoolState.total_assets)
+
+      // Update pool state
+      const newTotalShares = currentPoolState.total_shares - sharesToBurn
+      const newTotalAssets = currentPoolState.total_assets - amount
+      updatePoolState.run(newTotalShares, newTotalAssets)
+
+      // Update user
+      updateUser.run(amount, sharesToBurn, walletAddress)
+
+      // Insert withdrawal record
       insertWithdrawal.run(walletAddress, -amount, signature) // Negative amount to indicate withdrawal
     })
 
