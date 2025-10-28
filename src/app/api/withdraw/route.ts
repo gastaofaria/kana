@@ -1,4 +1,4 @@
-import db from '@/lib/db'
+import { sql, initializeDatabase } from '@/lib/db-postgres'
 import { NextRequest, NextResponse } from 'next/server'
 import { address, createTransaction } from 'gill'
 
@@ -7,8 +7,19 @@ const TOKEN_PROGRAM_ID = address('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
 const USDC_DECIMALS = 6
 const DESTINATION_ADDRESS = address('E9y3X4EqLZuMj4zHvmULrihhPzZKiCzu2v98KkzrrQzb')
 
+// Initialize database on first request
+let dbInitialized = false
+async function ensureDbInitialized() {
+  if (!dbInitialized) {
+    await initializeDatabase()
+    dbInitialized = true
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
+    await ensureDbInitialized()
+
     const { walletAddress, amount } = await request.json()
 
     if (!walletAddress || !amount) {
@@ -20,7 +31,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has enough shares and calculate withdrawable amount
-    const user = db.prepare('SELECT * FROM users WHERE wallet_address = ?').get(walletAddress) as
+    const userResult = await sql`
+      SELECT * FROM users WHERE wallet_address = ${walletAddress}
+    `
+    const user = userResult[0] as
       | {
           wallet_address: string
           total_deposits: number
@@ -28,19 +42,22 @@ export async function POST(request: NextRequest) {
         }
       | undefined
 
-    if (!user || user.shares === 0) {
+    if (!user || Number(user.shares) === 0) {
       return NextResponse.json({ error: 'No shares to withdraw' }, { status: 400 })
     }
 
     // Get pool state to calculate withdrawable amount
-    const poolState = db.prepare('SELECT * FROM pool_state WHERE id = 1').get() as {
+    const poolStateResult = await sql`
+      SELECT * FROM pool_state WHERE id = 1
+    `
+    const poolState = poolStateResult[0] as {
       total_shares: number
       total_assets: number
     }
 
     // Calculate maximum withdrawable amount based on shares
     // withdrawableAmount = userShares * totalAssets / totalShares
-    const maxWithdrawable = (user.shares * poolState.total_assets) / poolState.total_shares
+    const maxWithdrawable = (Number(user.shares) * Number(poolState.total_assets)) / Number(poolState.total_shares)
 
     if (amount > maxWithdrawable) {
       return NextResponse.json(
@@ -156,47 +173,42 @@ export async function POST(request: NextRequest) {
     const signature = sendResult
 
     // Update database - burn shares, update pool state, and record withdrawal
-    const getPoolState = db.prepare('SELECT * FROM pool_state WHERE id = 1')
-    const updatePoolState = db.prepare(`
+    // Get current pool state
+    const currentPoolStateResult = await sql`
+      SELECT * FROM pool_state WHERE id = 1
+    `
+    const currentPoolState = currentPoolStateResult[0] as { total_shares: number; total_assets: number }
+
+    // Calculate shares to burn
+    // sharesToBurn = amount * totalShares / totalAssets
+    const sharesToBurn = Math.floor(
+      (amount * Number(currentPoolState.total_shares)) / Number(currentPoolState.total_assets),
+    )
+
+    // Update pool state
+    const newTotalShares = Number(currentPoolState.total_shares) - sharesToBurn
+    const newTotalAssets = Number(currentPoolState.total_assets) - amount
+
+    await sql`
       UPDATE pool_state
-      SET total_shares = ?, total_assets = ?
+      SET total_shares = ${newTotalShares}, total_assets = ${newTotalAssets}
       WHERE id = 1
-    `)
+    `
 
-    const updateUser = db.prepare(`
+    // Update user
+    await sql`
       UPDATE users
-      SET total_deposits = total_deposits - ?,
-          shares = shares - ?,
-          updated_at = strftime('%s', 'now')
-      WHERE wallet_address = ?
-    `)
+      SET total_deposits = total_deposits - ${amount},
+          shares = shares - ${sharesToBurn},
+          updated_at = EXTRACT(EPOCH FROM NOW())
+      WHERE wallet_address = ${walletAddress}
+    `
 
-    const insertWithdrawal = db.prepare(`
+    // Insert withdrawal record (negative amount to indicate withdrawal)
+    await sql`
       INSERT INTO deposits (wallet_address, amount, transaction_signature)
-      VALUES (?, ?, ?)
-    `)
-
-    const dbTransaction = db.transaction((walletAddress: string, amount: number, signature: string) => {
-      // Get current pool state
-      const currentPoolState = getPoolState.get() as { total_shares: number; total_assets: number }
-
-      // Calculate shares to burn
-      // sharesToBurn = amount * totalShares / totalAssets
-      const sharesToBurn = Math.floor((amount * currentPoolState.total_shares) / currentPoolState.total_assets)
-
-      // Update pool state
-      const newTotalShares = currentPoolState.total_shares - sharesToBurn
-      const newTotalAssets = currentPoolState.total_assets - amount
-      updatePoolState.run(newTotalShares, newTotalAssets)
-
-      // Update user
-      updateUser.run(amount, sharesToBurn, walletAddress)
-
-      // Insert withdrawal record
-      insertWithdrawal.run(walletAddress, -amount, signature) // Negative amount to indicate withdrawal
-    })
-
-    dbTransaction(walletAddress, amount, signature)
+      VALUES (${walletAddress}, ${-amount}, ${signature})
+    `
 
     return NextResponse.json({
       success: true,

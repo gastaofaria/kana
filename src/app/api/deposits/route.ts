@@ -1,8 +1,19 @@
-import db from '@/lib/db'
+import { sql, initializeDatabase } from '@/lib/db-postgres'
 import { NextRequest, NextResponse } from 'next/server'
+
+// Initialize database on first request
+let dbInitialized = false
+async function ensureDbInitialized() {
+  if (!dbInitialized) {
+    await initializeDatabase()
+    dbInitialized = true
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
+    await ensureDbInitialized()
+
     const { walletAddress, amount, transactionSignature } = await request.json()
 
     if (!walletAddress || !amount) {
@@ -13,62 +24,69 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Amount must be greater than 0' }, { status: 400 })
     }
 
-    const insertDeposit = db.prepare(`
-      INSERT INTO deposits (wallet_address, amount, transaction_signature)
-      VALUES (?, ?, ?)
-    `)
+    // Get current pool state
+    const poolStateResult = await sql`
+      SELECT * FROM pool_state WHERE id = 1
+    `
+    const poolState = poolStateResult[0] as { total_shares: number; total_assets: number }
 
-    const getPoolState = db.prepare('SELECT * FROM pool_state WHERE id = 1')
-    const updatePoolState = db.prepare(`
+    // Calculate shares to mint
+    // Scale by 1e6 to handle decimal amounts (same as USDC decimals)
+    let sharesToMint: number
+    if (Number(poolState.total_shares) === 0) {
+      // First depositor gets shares equal to deposit amount (scaled)
+      sharesToMint = Math.floor(amount * 1e6)
+    } else {
+      // shares = amount * totalShares / totalAssets
+      sharesToMint = Math.floor((amount * Number(poolState.total_shares)) / Number(poolState.total_assets))
+    }
+
+    // Update pool state
+    const newTotalShares = Number(poolState.total_shares) + sharesToMint
+    const newTotalAssets = Number(poolState.total_assets) + amount
+
+    await sql`
       UPDATE pool_state
-      SET total_shares = ?, total_assets = ?
+      SET total_shares = ${newTotalShares}, total_assets = ${newTotalAssets}
       WHERE id = 1
-    `)
+    `
 
-    const upsertUser = db.prepare(`
+    // Upsert user
+    await sql`
       INSERT INTO users (wallet_address, total_deposits, shares)
-      VALUES (?, ?, ?)
+      VALUES (${walletAddress}, ${amount}, ${sharesToMint})
       ON CONFLICT(wallet_address)
       DO UPDATE SET
-        total_deposits = total_deposits + excluded.total_deposits,
-        shares = shares + excluded.shares,
-        updated_at = strftime('%s', 'now')
-    `)
+        total_deposits = users.total_deposits + ${amount},
+        shares = users.shares + ${sharesToMint},
+        updated_at = EXTRACT(EPOCH FROM NOW())
+    `
 
-    const transaction = db.transaction((walletAddress: string, amount: number, transactionSignature: string) => {
-      // Get current pool state
-      const poolState = getPoolState.get() as { total_shares: number; total_assets: number }
+    // Insert deposit record
+    await sql`
+      INSERT INTO deposits (wallet_address, amount, transaction_signature)
+      VALUES (${walletAddress}, ${amount}, ${transactionSignature})
+    `
 
-      // Calculate shares to mint
-      // Scale by 1e6 to handle decimal amounts (same as USDC decimals)
-      let sharesToMint: number
-      if (poolState.total_shares === 0) {
-        // First depositor gets shares equal to deposit amount (scaled)
-        sharesToMint = Math.floor(amount * 1e6)
-      } else {
-        // shares = amount * totalShares / totalAssets
-        sharesToMint = Math.floor((amount * poolState.total_shares) / poolState.total_assets)
-      }
-
-      // Update pool state
-      const newTotalShares = poolState.total_shares + sharesToMint
-      const newTotalAssets = poolState.total_assets + amount
-      updatePoolState.run(newTotalShares, newTotalAssets)
-
-      // Update user
-      upsertUser.run(walletAddress, amount, sharesToMint)
-
-      // Insert deposit record
-      insertDeposit.run(walletAddress, amount, transactionSignature)
-    })
-
-    transaction(walletAddress, amount, transactionSignature)
-
-    const user = db.prepare('SELECT * FROM users WHERE wallet_address = ?').get(walletAddress)
+    // Fetch updated user data
+    const userResult = await sql`
+      SELECT * FROM users WHERE wallet_address = ${walletAddress}
+    `
+    const user = userResult[0] as {
+      wallet_address: string
+      total_deposits: number | string
+      shares: number | string
+      created_at: number
+      updated_at: number
+    }
 
     return NextResponse.json({
       success: true,
-      data: user,
+      data: {
+        ...user,
+        total_deposits: Number(user.total_deposits),
+        shares: Number(user.shares),
+      },
     })
   } catch (error) {
     console.error('Error recording deposit:', error)
@@ -78,6 +96,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    await ensureDbInitialized()
+
     const { searchParams } = new URL(request.url)
     const walletAddress = searchParams.get('walletAddress')
 
@@ -85,7 +105,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Wallet address is required' }, { status: 400 })
     }
 
-    const user = db.prepare('SELECT * FROM users WHERE wallet_address = ?').get(walletAddress) as
+    const userResult = await sql`
+      SELECT * FROM users WHERE wallet_address = ${walletAddress}
+    `
+    const user = userResult[0] as
       | {
           wallet_address: string
           total_deposits: number
@@ -95,9 +118,20 @@ export async function GET(request: NextRequest) {
         }
       | undefined
 
-    const deposits = db
-      .prepare('SELECT * FROM deposits WHERE wallet_address = ? ORDER BY created_at DESC')
-      .all(walletAddress)
+    const depositsResult = await sql`
+      SELECT * FROM deposits WHERE wallet_address = ${walletAddress} ORDER BY created_at DESC
+    `
+    const deposits = (
+      depositsResult as Array<{
+        wallet_address: string
+        amount: number | string
+        transaction_signature: string
+        created_at: number
+      }>
+    ).map((deposit) => ({
+      ...deposit,
+      amount: Number(deposit.amount),
+    }))
 
     if (!user) {
       return NextResponse.json({
@@ -113,6 +147,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       data: {
         ...user,
+        total_deposits: Number(user.total_deposits),
+        shares: Number(user.shares),
         deposits,
       },
     })
