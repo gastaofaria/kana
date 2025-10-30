@@ -14,7 +14,7 @@ export function AppHero({
       <div className="text-center">
         <div className="max-w-2xl">
           {typeof title === 'string' ? <h1 className="text-5xl font-bold">{title}</h1> : title}
-          {typeof subtitle === 'string' ? <p className="pt-4 md:py-6">{subtitle}</p> : subtitle}
+          {typeof subtitle === 'string' ? <h1 className="text-xl pt-4 md:py-6">{subtitle}</h1> : subtitle}
           {children}
         </div>
       </div>

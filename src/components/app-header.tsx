@@ -3,6 +3,7 @@ import { ThemeSelect } from '@/components/theme-select'
 import { Button } from '@/components/ui/button'
 import { WalletDropdown } from '@/components/wallet-dropdown'
 import { Menu, X } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
@@ -21,26 +22,17 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
 
   return (
     <header className="relative z-50 px-4 py-2">
-      <div className="mx-auto flex flex-row-reverse">
-        {/* <div className="flex items-baseline gap-4">
-          <Link className="text-xl hover:text-neutral-500 dark:hover:text-white" href="/">
-            <span>Kana</span>
-          </Link>
-          <div className="hidden md:flex items-center">
-            <ul className="flex gap-4 flex-nowrap items-center">
-              {links.map(({ label, path }) => (
-                <li key={path}>
-                  <Link
-                    className={`hover:text-neutral-500 dark:hover:text-white ${isActive(path) ? 'text-neutral-500 dark:text-white' : ''}`}
-                    href={path}
-                  >
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div> */}
+      <div className="mx-auto flex items-center justify-between">
+        <div className="flex items-center">
+          <Image
+            src="/1.-Logo-Website-min.webp"
+            alt="Kana Logo"
+            width={120}
+            height={40}
+            className="h-10 w-auto"
+            priority
+          />
+        </div>
 
         <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setShowMenu(!showMenu)}>
           {showMenu ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -49,7 +41,7 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
         <div className="hidden md:flex items-center gap-4">
           <WalletDropdown />
           {/* <ClusterDropdown /> */}
-          <ThemeSelect />
+          {/* <ThemeSelect /> */}
         </div>
 
         {showMenu && (
@@ -58,7 +50,7 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
               <div className="flex justify-end items-center gap-4">
                 <WalletDropdown />
                 {/* <ClusterDropdown /> */}
-                <ThemeSelect />
+                {/* <ThemeSelect /> */}
               </div>
               <ul className="flex flex-col gap-4">
                 {links.map(({ label, path }) => (

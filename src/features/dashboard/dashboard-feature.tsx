@@ -5,6 +5,7 @@ import { useSolana } from '@/components/solana/use-solana'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
 import { WalletDropdown } from '@/components/wallet-dropdown'
+import Image from 'next/image'
 import { useGetUserDepositsQuery } from './data-access/use-get-user-deposits-query'
 import { DashboardUiYieldCards } from './ui/dashboard-ui-yield-cards'
 
@@ -16,7 +17,14 @@ export default function DashboardFeature() {
 
   return (
     <>
-      <AppHero title="Kana 🌱" subtitle="Maximize yield with one click" />
+      <AppHero
+        title={
+          <div className="flex flex-col items-center gap-4">
+            <Image src="/mascot.jpg" alt="Kana Mascot" width={200} height={200} className="rounded-full" />
+          </div>
+        }
+        subtitle="Maximize your investments with one click"
+      />
       {!connected ? (
         <div className="hero py-[64px]">
           <div className="hero-content text-center">
