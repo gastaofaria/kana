@@ -29,31 +29,32 @@ export default function DashboardFeature() {
           </div>
         </div>
       ) : (
-        <>
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Card>
-              <CardHeader>
-                {isLoading ? (
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Card>
+            <CardHeader>
+              {isLoading ? (
+                <CardTitle className="group-hover:text-primary transition-colors text-2xl font-bold cursor-pointer">
+                  {/* <Spinner className="size-6" /> */}
+                </CardTitle>
+              ) : (
+                <>
                   <CardTitle className="group-hover:text-primary transition-colors text-2xl font-bold cursor-pointer">
-                    <Spinner className="size-6" />
+                    {/* {isLoading ? 
+                    <Spinner className="size-6" /> 
+                    : */}
+                    {`$${depositedBalance.toFixed(2)}`}
                   </CardTitle>
-                ) : (
-                  <>
-                    <CardTitle className="group-hover:text-primary transition-colors text-2xl font-bold cursor-pointer">
-                      {isLoading ? <Spinner className="size-6" /> : `$${depositedBalance.toFixed(2)}`}
-                    </CardTitle>
-                    <CardDescription>
-                      You&apos;ve earned <span className="text-primary font-semibold">$0</span> so far
-                    </CardDescription>
-                  </>
-                )}
-              </CardHeader>
-            </Card>
-          </div>
-          <div className="mt-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <CardDescription>
+                    You&apos;ve earned <span className="text-primary font-semibold">$0</span> so far
+                  </CardDescription>
+                </>
+              )}
+            </CardHeader>
+          </Card>
+          <div className="mt-8">
             <DashboardUiYieldCards depositedBalance={depositedBalance} isLoading={isLoading} />
           </div>
-        </>
+        </div>
       )}
     </>
   )
