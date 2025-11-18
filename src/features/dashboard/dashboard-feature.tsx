@@ -3,17 +3,14 @@
 import { AppHero } from '@/components/app-hero'
 import { useSolana } from '@/components/solana/use-solana'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Spinner } from '@/components/ui/spinner'
 import { WalletDropdown } from '@/components/wallet-dropdown'
 import Image from 'next/image'
-import { useGetUserDepositsQuery } from './data-access/use-get-user-deposits-query'
 import { DashboardUiYieldCards } from './ui/dashboard-ui-yield-cards'
 
 export default function DashboardFeature() {
-  const { connected, account } = useSolana()
-  const userDepositsQuery = useGetUserDepositsQuery({ walletAddress: account?.address })
-  const depositedBalance = userDepositsQuery.data?.total_deposits || 0
-  const isLoading = userDepositsQuery.isLoading
+  const { connected } = useSolana()
+  const depositedBalance = 0
+  const isLoading = false
 
   return (
     <>
