@@ -1,16 +1,30 @@
 'use client'
 
 import { ThemeProvider } from '@/components/theme-provider'
-import { ReactQueryProvider } from './react-query-provider'
-import { SolanaProvider } from '@/components/solana/solana-provider'
+import { RainbowKitProvider, getDefaultConfig } from '@rainbow-me/rainbowkit'
+import '@rainbow-me/rainbowkit/styles.css'
 import React from 'react'
+import { WagmiProvider } from 'wagmi'
+import { base } from 'wagmi/chains'
+import { ReactQueryProvider } from './react-query-provider'
+
+const config = getDefaultConfig({
+  appName: 'Kana',
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '',
+  chains: [base],
+  ssr: true,
+})
 
 export function AppProviders({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <ReactQueryProvider>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-        <SolanaProvider>{children}</SolanaProvider>
-      </ThemeProvider>
-    </ReactQueryProvider>
+    <WagmiProvider config={config}>
+      <ReactQueryProvider>
+        <RainbowKitProvider>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+            {children}
+          </ThemeProvider>
+        </RainbowKitProvider>
+      </ReactQueryProvider>
+    </WagmiProvider>
   )
 }

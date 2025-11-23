@@ -1,14 +1,14 @@
 'use client'
 
 import { AppHero } from '@/components/app-hero'
-import { useSolana } from '@/components/solana/use-solana'
+import { useAccount } from 'wagmi'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { WalletDropdown } from '@/components/wallet-dropdown'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 import Image from 'next/image'
 import { DashboardUiYieldCards } from './ui/dashboard-ui-yield-cards'
 
 export default function DashboardFeature() {
-  const { connected } = useSolana()
+  const { isConnected } = useAccount()
   const depositedBalance = 0
   const isLoading = false
 
@@ -22,11 +22,9 @@ export default function DashboardFeature() {
         }
         subtitle="Maximize your investments with one click"
       />
-      {!connected ? (
-        <div className="hero py-[64px]">
-          <div className="hero-content text-center">
-            <WalletDropdown />
-          </div>
+      {!isConnected ? (
+        <div className="flex justify-center py-16">
+          <ConnectButton />
         </div>
       ) : (
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">

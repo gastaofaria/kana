@@ -1,7 +1,6 @@
 'use client'
-import { ThemeSelect } from '@/components/theme-select'
 import { Button } from '@/components/ui/button'
-import { WalletDropdown } from '@/components/wallet-dropdown'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { Menu, X } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -39,7 +38,7 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
         </Button>
 
         <div className="hidden md:flex items-center gap-4">
-          <WalletDropdown />
+          <ConnectButton />
           {/* <ClusterDropdown /> */}
           {/* <ThemeSelect /> */}
         </div>
@@ -48,7 +47,7 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
           <div className="md:hidden fixed inset-x-0 top-[52px] bottom-0 bg-neutral-100/95 dark:bg-neutral-900/95 backdrop-blur-sm">
             <div className="flex flex-col p-4 gap-4 border-t dark:border-neutral-800">
               <div className="flex justify-end items-center gap-4">
-                <WalletDropdown />
+                <ConnectButton />
                 {/* <ClusterDropdown /> */}
                 {/* <ThemeSelect /> */}
               </div>

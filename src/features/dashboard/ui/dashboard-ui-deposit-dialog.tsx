@@ -1,75 +1,50 @@
 'use client'
 
-import { useSolana } from '@/components/solana/use-solana'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { address } from 'gill'
 import Image from 'next/image'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { useGetUsdcBalanceQuery } from '../data-access/use-get-usdc-balance-query'
-import { useTransferUsdcMutation } from '../data-access/use-transfer-usdc-mutation'
-
-const DESTINATION_ADDRESS = address('E9y3X4EqLZuMj4zHvmULrihhPzZKiCzu2v98KkzrrQzb')
+import { useAccount } from 'wagmi'
 
 export function DashboardUiDepositDialog() {
   const [depositAmount, setDepositAmount] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit')
-  const { account } = useSolana()
-  const dummyAddress = address('11111111111111111111111111111111')
-  const accountAddress = account?.address ? address(account.address) : dummyAddress
+  const { address } = useAccount()
 
-  const usdcBalanceQuery = useGetUsdcBalanceQuery({ address: accountAddress })
-  const usdcBalance = usdcBalanceQuery.data?.value ? Number(usdcBalanceQuery.data.value) / 1_000_000 : 0
-
+  // TODO: Implement USDC balance query for Base
+  const usdcBalance = 0
   const depositedBalance = 0
 
-  const transferUsdcMutation = useTransferUsdcMutation({
-    account: account as NonNullable<typeof account>,
-    address: accountAddress
-  })
-
   const handleDeposit = async () => {
-    if (!account?.address || !isValidAmount()) {
+    if (!address || !isValidAmount()) {
       return
     }
 
     const amount = parseFloat(depositAmount)
 
-    try {
-      // Proceed with the blockchain transfer
-      const signature = await transferUsdcMutation.mutateAsync({
-        destination: DESTINATION_ADDRESS,
-        amount,
-      })
+    // TODO: Implement deposit logic
+    console.log('Recording deposit:', {
+      walletAddress: address,
+      amount,
+    })
 
-      // Log the deposit
-      console.log('Recording deposit:', {
-        walletAddress: account.address,
-        amount,
-        transactionSignature: signature,
-      })
-
-      toast.success('Deposit recorded successfully')
-      setIsDialogOpen(false)
-      setDepositAmount('')
-    } catch (error) {
-      console.error('Deposit failed:', error)
-      // Error toasts are already handled by the mutations
-    }
+    toast.success('Deposit recorded successfully')
+    setIsDialogOpen(false)
+    setDepositAmount('')
   }
 
   const handleWithdraw = async () => {
-    if (!account?.address || !isValidAmount()) {
+    if (!address || !isValidAmount()) {
       return
     }
 
     const amount = parseFloat(depositAmount)
 
     console.log('Processing withdrawal:', {
-      walletAddress: account.address,
+      walletAddress: address,
       amount,
     })
 
@@ -181,14 +156,10 @@ export function DashboardUiDepositDialog() {
         <DialogFooter>
           <Button
             onClick={handleSubmit}
-            disabled={!isValidAmount() || transferUsdcMutation.isPending}
+            disabled={!isValidAmount()}
             className="w-full"
           >
-            {transferUsdcMutation.isPending
-              ? 'Processing...'
-              : activeTab === 'deposit'
-                ? 'Deposit'
-                : 'Withdraw'}
+            {activeTab === 'deposit' ? 'Deposit' : 'Withdraw'}
           </Button>
         </DialogFooter>
       </DialogContent>
