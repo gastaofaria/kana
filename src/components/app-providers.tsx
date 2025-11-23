@@ -1,12 +1,12 @@
 'use client'
 
 import { ThemeProvider } from '@/components/theme-provider'
-import React from 'react'
-import { ReactQueryProvider } from './react-query-provider'
-import { WagmiProvider, createConfig, http } from 'wagmi'
-import { base } from 'wagmi/chains'
 import { RainbowKitProvider, getDefaultConfig } from '@rainbow-me/rainbowkit'
 import '@rainbow-me/rainbowkit/styles.css'
+import React from 'react'
+import { WagmiProvider } from 'wagmi'
+import { base } from 'wagmi/chains'
+import { ReactQueryProvider } from './react-query-provider'
 
 const config = getDefaultConfig({
   appName: 'Kana',

@@ -1,6 +1,6 @@
 import { DashboardUiBalanceUsdc } from './dashboard-ui-balance-usdc'
 
-export function DashboardUiBalance({ address }: { address: string }) {
+export function DashboardUiBalance() {
   // TODO: Implement USDC balance query for Base
   const balance = 0n
 

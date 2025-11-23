@@ -1,5 +1,4 @@
 'use client'
-import { ThemeSelect } from '@/components/theme-select'
 import { Button } from '@/components/ui/button'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { Menu, X } from 'lucide-react'
